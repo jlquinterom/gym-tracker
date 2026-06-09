@@ -192,7 +192,9 @@ So that queda almacenada y puedo consultarla más tarde.
 
 ---
 
-### Story 1.4: Precargar peso y reps del último registro del ejercicio
+### Story 1.4: Precargar peso y reps del último registro del ejercicio ✅
+
+**Status:** complete · 2026-06-09 · validada manualmente (precarga al cambiar ejercicio, indicador relativo, refresh tras guardar)
 
 As a usuario,
 I want que al seleccionar un ejercicio el formulario me muestre el peso y reps de la última vez que lo hice,

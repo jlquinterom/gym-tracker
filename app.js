@@ -20,6 +20,44 @@ const MUSCLE_GROUP_LABELS = {
   otros: "Otros",
 };
 
+// ─── Helpers de fechas y consulta ───────────────────────────────────────────
+
+/**
+ * Devuelve una etiqueta relativa en español ("hoy", "ayer", "hace 3 días",
+ * "hace 2 semanas"…) calculada sobre días civiles (no diferencia en ms).
+ */
+function formatRelativeDate(isoString) {
+  const then = new Date(isoString);
+  const now = new Date();
+
+  const thenDay = new Date(then.getFullYear(), then.getMonth(), then.getDate());
+  const nowDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const dayMs = 1000 * 60 * 60 * 24;
+  const diffDays = Math.round((thenDay - nowDay) / dayMs);
+
+  const rtf = new Intl.RelativeTimeFormat("es", { numeric: "auto" });
+
+  if (Math.abs(diffDays) < 7) return rtf.format(diffDays, "day");
+  if (Math.abs(diffDays) < 30) return rtf.format(Math.round(diffDays / 7), "week");
+  if (Math.abs(diffDays) < 365) return rtf.format(Math.round(diffDays / 30), "month");
+  return rtf.format(Math.round(diffDays / 365), "year");
+}
+
+/**
+ * Devuelve la serie más reciente registrada para un ejercicio dado, o null si no hay ninguna.
+ * Función pura: no muta nada.
+ */
+function getLastSetByExercise(data, exerciseId) {
+  let last = null;
+  for (const set of data.sets) {
+    if (set.exerciseId !== exerciseId) continue;
+    if (last === null || set.completedAt > last.completedAt) {
+      last = set;
+    }
+  }
+  return last;
+}
+
 // ─── Persistencia (localStorage) ────────────────────────────────────────────
 
 /**
@@ -162,6 +200,40 @@ function clearAllFieldErrors() {
     });
 }
 
+// ─── Precarga última serie ──────────────────────────────────────────────────
+
+/**
+ * Lee la última serie del ejercicio seleccionado y precarga peso/reps + indicador.
+ * Si no hay historial, deja los inputs vacíos y muestra "Sin historial".
+ */
+function updatePreloadAndIndicator(exerciseId) {
+  const weightInput = document.getElementById("weight-input");
+  const repsInput = document.getElementById("reps-input");
+  const indicator = document.getElementById("last-set-indicator");
+  if (!weightInput || !repsInput || !indicator) return;
+
+  if (!exerciseId) {
+    weightInput.value = "";
+    repsInput.value = "";
+    indicator.textContent = "Sin historial";
+    return;
+  }
+
+  const data = loadData();
+  const lastSet = getLastSetByExercise(data, exerciseId);
+
+  if (!lastSet) {
+    weightInput.value = "";
+    repsInput.value = "";
+    indicator.textContent = "Sin historial";
+    return;
+  }
+
+  weightInput.value = String(lastSet.weight);
+  repsInput.value = String(lastSet.reps);
+  indicator.textContent = `Última vez: ${lastSet.weight} kg × ${lastSet.reps} (${formatRelativeDate(lastSet.completedAt)})`;
+}
+
 // ─── Toast ──────────────────────────────────────────────────────────────────
 
 let toastHideTimer = null;
@@ -221,9 +293,9 @@ function handleSubmit(event) {
 
     showToast(`Serie guardada · ${weight} kg × ${reps}`);
 
-    // Resetear inputs pero mantener el ejercicio seleccionado.
-    weightInput.value = "";
-    repsInput.value = "";
+    // Refrescar la precarga: la última serie ahora es la que acabamos de guardar.
+    // Esto vuelve a llenar peso/reps con los mismos valores y actualiza el indicador.
+    updatePreloadAndIndicator(exerciseId);
     weightInput.focus();
   } catch (err) {
     console.error("Error guardando la serie:", err);
@@ -247,6 +319,13 @@ async function init() {
 
   const grouped = groupByMuscleGroup(exercises);
   renderExerciseSelect(selectEl, grouped);
+
+  // Al cambiar de ejercicio, precarga peso/reps del último registro de ese ejercicio.
+  selectEl.addEventListener("change", () => updatePreloadAndIndicator(selectEl.value));
+
+  // Estado inicial: el primer ejercicio queda seleccionado por defecto, así que
+  // intentamos precargarlo al arrancar.
+  updatePreloadAndIndicator(selectEl.value);
 
   formEl.addEventListener("submit", handleSubmit);
 }

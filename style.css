@@ -109,6 +109,12 @@ body {
   min-height: 1rem;
 }
 
+.last-set-indicator {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  margin-top: 0.25rem;
+}
+
 .btn-primary {
   font-family: inherit;
   font-size: 1rem;
