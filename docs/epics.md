@@ -234,7 +234,9 @@ So that puedo ver mi historial y verificar que se está guardando bien.
 
 **Objetivo:** Migrar V0 a stack V1 (Vite + Dexie + PWA), desplegar a GitHub Pages, app instalable en iPhone que funciona offline.
 
-### Story 2.1: Scaffold V1 con Vite PWA Vanilla
+### Story 2.1: Scaffold V1 con Vite PWA Vanilla ✅
+
+**Status:** complete · 2026-06-09 · branch v1 · build OK · "V1 scaffold OK" verificado en localhost:5173
 
 As a desarrollador del proyecto,
 I want inicializar V1 con `@vite-pwa/create-pwa` template vanilla y verificar que arranca,
