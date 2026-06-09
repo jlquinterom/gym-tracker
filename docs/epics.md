@@ -153,7 +153,9 @@ So that puedo ver la app abierta en el navegador antes de añadir funcionalidad.
 
 ---
 
-### Story 1.2: Renderizar catálogo de ejercicios en el formulario
+### Story 1.2: Renderizar catálogo de ejercicios en el formulario ✅
+
+**Status:** complete · 2026-06-09 · validada manualmente en Live Server
 
 As a usuario,
 I want un select desplegable con los ejercicios disponibles,
