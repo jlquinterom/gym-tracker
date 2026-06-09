@@ -1,0 +1,62 @@
+[
+  {
+    "id": "bench-press",
+    "name": "Press banca",
+    "muscleGroup": "pecho",
+    "isCustom": false
+  },
+  {
+    "id": "incline-bench-press",
+    "name": "Press inclinado",
+    "muscleGroup": "pecho",
+    "isCustom": false
+  },
+  {
+    "id": "pull-up",
+    "name": "Dominadas",
+    "muscleGroup": "espalda",
+    "isCustom": false
+  },
+  {
+    "id": "barbell-row",
+    "name": "Remo con barra",
+    "muscleGroup": "espalda",
+    "isCustom": false
+  },
+  {
+    "id": "squat",
+    "name": "Sentadilla",
+    "muscleGroup": "pierna",
+    "isCustom": false
+  },
+  {
+    "id": "deadlift",
+    "name": "Peso muerto",
+    "muscleGroup": "pierna",
+    "isCustom": false
+  },
+  {
+    "id": "overhead-press",
+    "name": "Press militar",
+    "muscleGroup": "hombro",
+    "isCustom": false
+  },
+  {
+    "id": "lateral-raise",
+    "name": "Elevaciones laterales",
+    "muscleGroup": "hombro",
+    "isCustom": false
+  },
+  {
+    "id": "bicep-curl",
+    "name": "Curl de bíceps",
+    "muscleGroup": "brazo",
+    "isCustom": false
+  },
+  {
+    "id": "plank",
+    "name": "Plancha",
+    "muscleGroup": "core",
+    "isCustom": false
+  }
+]

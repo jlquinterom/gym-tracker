@@ -134,7 +134,9 @@ Implementa cálculos de insights: 1RM estimado (Epley, solo reps ≤ 10), volume
 
 **Objetivo:** Esqueleto V0 funcional servido en localhost. Usuario puede registrar series y consultar histórico.
 
-### Story 1.1: Inicializar estructura V0
+### Story 1.1: Inicializar estructura V0 ✅
+
+**Status:** complete · 2026-06-09 · validada manualmente en VS Code Live Server
 
 As a usuario que arranca el proyecto,
 I want una estructura básica de archivos HTML/CSS/JS funcionando en localhost,
