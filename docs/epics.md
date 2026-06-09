@@ -172,7 +172,9 @@ So that puedo elegir qué ejercicio voy a registrar antes de introducir peso y r
 
 ---
 
-### Story 1.3: Registrar una serie y persistir en localStorage
+### Story 1.3: Registrar una serie y persistir en localStorage ✅
+
+**Status:** complete · 2026-06-09 · validada manualmente (registro, validación inline, persistencia tras recarga)
 
 As a usuario que está entrenando,
 I want introducir peso (kg) y reps y guardar la serie con un toque,

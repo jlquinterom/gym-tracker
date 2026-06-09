@@ -11,13 +11,50 @@
       <h1 class="app-title">gym-tracker</h1>
       <p class="app-subtitle">Registrar serie</p>
 
-      <form id="set-form" class="set-form" autocomplete="off">
+      <form id="set-form" class="set-form" autocomplete="off" novalidate>
         <div class="field">
           <label for="exercise-select" class="field-label">Ejercicio</label>
-          <select id="exercise-select" class="field-input"></select>
+          <select id="exercise-select" class="field-input" required></select>
+          <span class="field-error" data-for="exercise-select" hidden></span>
         </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="weight-input" class="field-label">Peso (kg)</label>
+            <input
+              id="weight-input"
+              class="field-input"
+              type="number"
+              inputmode="decimal"
+              step="0.5"
+              min="0"
+              placeholder="0"
+              required
+            />
+            <span class="field-error" data-for="weight-input" hidden></span>
+          </div>
+
+          <div class="field">
+            <label for="reps-input" class="field-label">Reps</label>
+            <input
+              id="reps-input"
+              class="field-input"
+              type="number"
+              inputmode="numeric"
+              step="1"
+              min="1"
+              placeholder="0"
+              required
+            />
+            <span class="field-error" data-for="reps-input" hidden></span>
+          </div>
+        </div>
+
+        <button type="submit" class="btn-primary">Guardar serie</button>
       </form>
     </main>
+
+    <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 
     <script type="module" src="app.js"></script>
   </body>
