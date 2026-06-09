@@ -210,7 +210,9 @@ So that puedo aceptar esos valores con un toque o ajustarlos para superarme.
 
 ---
 
-### Story 1.5: Vista de histórico de series
+### Story 1.5: Vista de histórico de series ✅
+
+**Status:** complete · 2026-06-09 · validada manualmente (navegación, filtro, responsive, empty state)
 
 As a usuario,
 I want consultar todas mis series registradas en una tabla,

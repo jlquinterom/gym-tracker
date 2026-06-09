@@ -8,6 +8,16 @@ console.log("V0 ready");
 const STORAGE_KEY = "gym-tracker-data";
 const SCHEMA_VERSION = 0;
 const TOAST_DURATION_MS = 2500;
+const DEFAULT_VIEW = "home";
+
+// ─── Estado (single source of truth in-memory) ─────────────────────────────
+
+const state = {
+  currentView: DEFAULT_VIEW,
+  historyFilter: "", // exerciseId o "" para "Todos"
+  // Cache del catálogo cargado de exercises.json (se llena en init).
+  exercisesCatalog: [],
+};
 
 // Etiquetas legibles por grupo muscular (también define el orden de presentación).
 const MUSCLE_GROUP_LABELS = {
@@ -234,6 +244,136 @@ function updatePreloadAndIndicator(exerciseId) {
   indicator.textContent = `Última vez: ${lastSet.weight} kg × ${lastSet.reps} (${formatRelativeDate(lastSet.completedAt)})`;
 }
 
+// ─── Navegación entre vistas ────────────────────────────────────────────────
+
+function setCurrentView(view) {
+  state.currentView = view;
+  renderView();
+}
+
+function renderView() {
+  // Mostrar/ocultar secciones según el atributo data-view.
+  document.querySelectorAll("[data-view]").forEach((section) => {
+    section.hidden = section.dataset.view !== state.currentView;
+  });
+  // Marcar la pestaña activa en la nav.
+  document.querySelectorAll(".nav-tab").forEach((tab) => {
+    tab.classList.toggle(
+      "nav-tab--active",
+      tab.dataset.target === state.currentView,
+    );
+  });
+  // Renders específicos por vista.
+  if (state.currentView === "history") {
+    renderHistory();
+  }
+}
+
+// ─── Vista: Histórico ───────────────────────────────────────────────────────
+
+function getExerciseName(catalog, exerciseId) {
+  const exercise = catalog.find((e) => e.id === exerciseId);
+  return exercise ? exercise.name : exerciseId;
+}
+
+function renderHistory() {
+  const container = document.getElementById("history-content");
+  const filterSelect = document.getElementById("history-filter");
+  if (!container || !filterSelect) return;
+
+  const data = loadData();
+
+  // Caso: ninguna serie registrada todavía.
+  if (data.sets.length === 0) {
+    container.innerHTML =
+      '<p class="empty-state">Aún no has registrado ninguna serie.</p>';
+    // Reset filter options (solo "Todos").
+    filterSelect.innerHTML = '<option value="">Todos</option>';
+    return;
+  }
+
+  // Poblar el filter solo con ejercicios que TIENEN series.
+  const exerciseIdsWithSets = [...new Set(data.sets.map((s) => s.exerciseId))];
+  const prevSelected = filterSelect.value;
+  filterSelect.innerHTML = '<option value="">Todos</option>';
+  for (const exId of exerciseIdsWithSets) {
+    const option = document.createElement("option");
+    option.value = exId;
+    option.textContent = getExerciseName(state.exercisesCatalog, exId);
+    filterSelect.appendChild(option);
+  }
+  // Restaurar selección previa si sigue siendo válida.
+  if (
+    prevSelected === "" ||
+    exerciseIdsWithSets.includes(prevSelected)
+  ) {
+    filterSelect.value = prevSelected;
+  } else {
+    filterSelect.value = "";
+    state.historyFilter = "";
+  }
+
+  // Filtrar y ordenar (descendente por completedAt).
+  const filtered = state.historyFilter
+    ? data.sets.filter((s) => s.exerciseId === state.historyFilter)
+    : data.sets;
+
+  const sorted = [...filtered].sort((a, b) =>
+    a.completedAt < b.completedAt ? 1 : -1,
+  );
+
+  if (sorted.length === 0) {
+    container.innerHTML =
+      '<p class="empty-state">No hay series para este ejercicio.</p>';
+    return;
+  }
+
+  // Construir tabla. data-label en cada td para el modo card en mobile.
+  const rows = sorted
+    .map((set) => {
+      const date = new Date(set.completedAt);
+      const formattedDate = date.toLocaleDateString("es-ES", {
+        day: "2-digit",
+        month: "short",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+      const name = getExerciseName(state.exercisesCatalog, set.exerciseId);
+      return `
+        <tr>
+          <td data-label="Fecha">${formattedDate}</td>
+          <td data-label="Ejercicio">${escapeHtml(name)}</td>
+          <td data-label="Peso">${set.weight} kg</td>
+          <td data-label="Reps">${set.reps}</td>
+        </tr>
+      `;
+    })
+    .join("");
+
+  container.innerHTML = `
+    <table class="history-table">
+      <thead>
+        <tr>
+          <th>Fecha</th>
+          <th>Ejercicio</th>
+          <th>Peso</th>
+          <th>Reps</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
+  `;
+}
+
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 // ─── Toast ──────────────────────────────────────────────────────────────────
 
 let toastHideTimer = null;
@@ -317,6 +457,7 @@ async function init() {
     return;
   }
 
+  state.exercisesCatalog = exercises;
   const grouped = groupByMuscleGroup(exercises);
   renderExerciseSelect(selectEl, grouped);
 
@@ -328,6 +469,23 @@ async function init() {
   updatePreloadAndIndicator(selectEl.value);
 
   formEl.addEventListener("submit", handleSubmit);
+
+  // Navegación entre vistas.
+  document.querySelectorAll(".nav-tab").forEach((tab) => {
+    tab.addEventListener("click", () => setCurrentView(tab.dataset.target));
+  });
+
+  // Filtro del histórico.
+  const historyFilterEl = document.getElementById("history-filter");
+  if (historyFilterEl) {
+    historyFilterEl.addEventListener("change", () => {
+      state.historyFilter = historyFilterEl.value;
+      renderHistory();
+    });
+  }
+
+  // Render inicial (marca la tab activa correctamente al arrancar).
+  renderView();
 }
 
 init();
