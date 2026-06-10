@@ -435,7 +435,9 @@ So that detecto desequilibrios y veo la tendencia general de carga.
 
 ---
 
-### Story 4.4: Export del dataset completo a CSV
+### Story 4.4: Export del dataset completo a CSV ✅
+
+**Status:** complete · 2026-06-10 · branch v1 · botón en vista Histórico, función pura `buildCsv()`, descarga browser-native con BOM UTF-8, RFC 4180 escape. Sin librerías.
 
 As a usuario,
 I want descargar todos mis datos en un archivo CSV,

@@ -2,22 +2,44 @@
 
 import { state, setHistoryFilter } from "../state.js";
 import { getAllSets } from "../db.js";
+import { triggerExport } from "../export-csv.js";
+import { showToast } from "../ui/toast.js";
 import { escapeHtml } from "../utils.js";
 
 let historyContainerEl = null;
 let historyFilterEl = null;
+let exportBtnEl = null;
 
 // ─── Bind: se llama UNA VEZ al arrancar ─────────────────────────────────────
 
 export function bindHistoryView() {
   historyContainerEl = document.getElementById("history-content");
   historyFilterEl = document.getElementById("history-filter");
+  exportBtnEl = document.getElementById("export-csv-btn");
 
   if (!historyFilterEl) return;
 
   historyFilterEl.addEventListener("change", () => {
     setHistoryFilter(historyFilterEl.value);
   });
+
+  if (exportBtnEl) {
+    exportBtnEl.addEventListener("click", handleExport);
+  }
+}
+
+async function handleExport() {
+  try {
+    const exported = await triggerExport();
+    if (exported) {
+      showToast("CSV descargado");
+    } else {
+      showToast("No hay datos para exportar", "error");
+    }
+  } catch (err) {
+    console.error("Error exportando a CSV:", err);
+    showToast("No se pudo exportar. Inténtalo de nuevo.", "error");
+  }
 }
 
 // ─── Render: se llama cuando state cambia y la vista está visible ──────────

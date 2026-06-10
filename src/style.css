@@ -158,6 +158,11 @@ body {
   background: rgba(0, 0, 0, 0.03);
 }
 
+#export-csv-btn {
+  width: 100%;
+  margin-top: var(--space-3);
+}
+
 /* ─── Home: elección y rutinas ───────────────────────────────────── */
 
 .home-choose {
