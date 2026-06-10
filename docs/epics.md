@@ -254,7 +254,9 @@ So that tengo la base sobre la que construir las features V1.
 
 ---
 
-### Story 2.2: Capa de persistencia Dexie + migración de datos V0
+### Story 2.2: Capa de persistencia Dexie + migración de datos V0 ✅
+
+**Status:** complete · 2026-06-10 · branch v1 · arquitectura modular completa (db.js + state.js + views/ + ui/) · validado V1 base. Migración no probada manualmente — viable vía script en consola, opcional para principal flow.
 
 As a usuario que viene de V0,
 I want que mis series registradas en V0 se importen automáticamente a la nueva persistencia IndexedDB de V1,
