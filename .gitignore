@@ -17,6 +17,7 @@ __pycache__/
 # Build output (Vite)
 dist/
 dist-ssr/
+dev-dist/
 
 # Vite local cache
 .vite/
