@@ -17,7 +17,7 @@
 
       <nav class="nav-tabs" aria-label="Navegación principal">
         <button type="button" class="nav-tab" data-target="home">
-          Registrar
+          Entreno
         </button>
         <button type="button" class="nav-tab" data-target="history">
           Histórico
@@ -25,7 +25,13 @@
       </nav>
 
       <section data-view="home">
+        <div id="home-content"></div>
+      </section>
+
+      <section data-view="session" hidden>
         <p class="app-subtitle">Registrar serie</p>
+
+        <div id="session-planned-exercises" hidden></div>
 
         <form id="set-form" class="set-form" autocomplete="off" novalidate>
           <div class="field">
@@ -69,6 +75,10 @@
 
           <button type="submit" class="btn-primary">Guardar serie</button>
         </form>
+
+        <button type="button" id="end-session-btn" class="btn-end-session">
+          Finalizar entreno
+        </button>
       </section>
 
       <section data-view="history" hidden>

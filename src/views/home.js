@@ -1,149 +1,157 @@
-// Vista "Registrar serie" (vista por defecto).
-// Lee `state` y se suscribe a sus cambios. Mutaciones via `state.addSet`.
+// Vista "Home" — punto de entrada al entreno.
+// Muestra:
+//   - Si hay sesión activa: botón "Continuar entreno".
+//   - Si no hay sesión activa y NO se ha elegido "Desde rutina": dos botones grandes.
+//   - Si se eligió "Desde rutina" y hay rutinas: lista de rutinas para elegir.
+//   - Si se eligió "Desde rutina" y NO hay rutinas: empty state explicativo.
 
-import { state, addSet } from "../state.js";
-import { getLastSetByExercise } from "../db.js";
-import { MUSCLE_GROUP_LABELS } from "../seed-exercises.js";
+import {
+  state,
+  setCurrentView,
+  startFreeSession,
+  startRoutineSession,
+} from "../state.js";
 import { showToast } from "../ui/toast.js";
-import { formatRelativeDate, groupBy } from "../utils.js";
+import { escapeHtml } from "../utils.js";
 
-let homeSelectEl = null;
-let homeWeightInputEl = null;
-let homeRepsInputEl = null;
-let homeIndicatorEl = null;
-let homeFormEl = null;
+let homeContainerEl = null;
 
-// ─── Bind: se llama UNA VEZ al arrancar ─────────────────────────────────────
+// Sub-modo local de la home: "choose" (dos botones) | "pick-routine" (lista).
+// No vive en `state` porque es UI puramente local de esta vista.
+let homeMode = "choose";
 
 export function bindHomeView() {
-  homeSelectEl = document.getElementById("exercise-select");
-  homeWeightInputEl = document.getElementById("weight-input");
-  homeRepsInputEl = document.getElementById("reps-input");
-  homeIndicatorEl = document.getElementById("last-set-indicator");
-  homeFormEl = document.getElementById("set-form");
-
-  if (!homeFormEl) return;
-
-  populateExerciseSelect();
-
-  homeSelectEl.addEventListener("change", () => {
-    updatePreloadAndIndicator(homeSelectEl.value);
-  });
-
-  homeFormEl.addEventListener("submit", handleSubmit);
+  homeContainerEl = document.getElementById("home-content");
+  if (!homeContainerEl) return;
+  // Delegación de eventos: un único listener para los clicks dentro de home.
+  homeContainerEl.addEventListener("click", handleClick);
 }
-
-// ─── Render: se llama cuando state cambia ───────────────────────────────────
 
 export function renderHomeView() {
-  // El select se repobla solo si el catálogo cambia (raro en V0/V1 base).
-  // En esta historia no lo recargamos; basta con la población inicial.
-  if (homeSelectEl && homeSelectEl.options.length === 0) {
-    populateExerciseSelect();
+  if (!homeContainerEl) return;
+
+  // Caso 1: sesión activa → invitar a continuar.
+  if (state.currentSession) {
+    homeContainerEl.innerHTML = `
+      <div class="home-active-session">
+        <p class="home-active-message">
+          Tienes un entreno en curso desde
+          <strong>${formatTime(state.currentSession.startedAt)}</strong>.
+        </p>
+        <button type="button" class="btn-primary" data-action="resume-session">
+          Continuar entreno
+        </button>
+      </div>
+    `;
+    return;
   }
-  if (homeSelectEl) {
-    updatePreloadAndIndicator(homeSelectEl.value);
-  }
-}
 
-// ─── Internals ──────────────────────────────────────────────────────────────
-
-function populateExerciseSelect() {
-  if (!homeSelectEl) return;
-  homeSelectEl.innerHTML = "";
-
-  const grouped = groupBy(state.exercises, (e) => e.muscleGroup);
-  const knownKeys = Object.keys(MUSCLE_GROUP_LABELS).filter((k) => grouped[k]);
-  const unknownKeys = Object.keys(grouped).filter(
-    (k) => !MUSCLE_GROUP_LABELS[k],
-  );
-  const orderedKeys = [...knownKeys, ...unknownKeys];
-
-  for (const key of orderedKeys) {
-    const group = document.createElement("optgroup");
-    group.label = MUSCLE_GROUP_LABELS[key] || key;
-    for (const exercise of grouped[key]) {
-      const option = document.createElement("option");
-      option.value = exercise.id;
-      option.textContent = exercise.name;
-      group.appendChild(option);
+  // Caso 2: el usuario eligió "Desde rutina".
+  if (homeMode === "pick-routine") {
+    if (state.routines.length === 0) {
+      homeContainerEl.innerHTML = `
+        <div class="home-empty">
+          <p>
+            Aún no tienes rutinas. Empieza con un entreno libre y al
+            finalizar podrás guardarlo como rutina para usarla más adelante.
+          </p>
+          <button type="button" class="btn-primary" data-action="start-free">
+            Empezar entreno libre
+          </button>
+          <button type="button" class="btn-secondary" data-action="back-to-choose">
+            Volver
+          </button>
+        </div>
+      `;
+      return;
     }
-    homeSelectEl.appendChild(group);
-  }
-}
-
-async function updatePreloadAndIndicator(exerciseId) {
-  if (!homeWeightInputEl || !homeRepsInputEl || !homeIndicatorEl) return;
-
-  if (!exerciseId) {
-    homeWeightInputEl.value = "";
-    homeRepsInputEl.value = "";
-    homeIndicatorEl.textContent = "Sin historial";
+    const routineRows = state.routines
+      .slice()
+      .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
+      .map((r) => {
+        const totalSets = r.plannedSets?.length ?? 0;
+        const meta = totalSets > 0
+          ? `${r.exerciseIds.length} ejercicios · ${totalSets} series · creada ${formatDate(r.createdAt)}`
+          : `${r.exerciseIds.length} ejercicios · creada ${formatDate(r.createdAt)}`;
+        return `
+          <li>
+            <button type="button" class="routine-card" data-action="start-routine" data-routine-id="${escapeHtml(r.id)}">
+              <span class="routine-card-name">${escapeHtml(r.name)}</span>
+              <span class="routine-card-meta">${meta}</span>
+            </button>
+          </li>
+        `;
+      })
+      .join("");
+    homeContainerEl.innerHTML = `
+      <div class="home-pick-routine">
+        <h2 class="home-pick-routine-title">Elige una rutina</h2>
+        <ul class="routine-list">${routineRows}</ul>
+        <button type="button" class="btn-secondary" data-action="back-to-choose">
+          Volver
+        </button>
+      </div>
+    `;
     return;
   }
 
-  const lastSet = await getLastSetByExercise(exerciseId);
-  if (!lastSet) {
-    homeWeightInputEl.value = "";
-    homeRepsInputEl.value = "";
-    homeIndicatorEl.textContent = "Sin historial";
-    return;
+  // Caso 3 (por defecto): pantalla de elección.
+  homeContainerEl.innerHTML = `
+    <div class="home-choose">
+      <button type="button" class="choice-card" data-action="start-free">
+        <span class="choice-card-title">Entreno libre</span>
+        <span class="choice-card-desc">Añade ejercicios y series sobre la marcha</span>
+      </button>
+      <button type="button" class="choice-card" data-action="pick-routine">
+        <span class="choice-card-title">Desde rutina</span>
+        <span class="choice-card-desc">Carga una rutina guardada</span>
+      </button>
+    </div>
+  `;
+}
+
+// ─── Click handler con delegación ───────────────────────────────────────────
+
+async function handleClick(event) {
+  const target = event.target.closest("[data-action]");
+  if (!target) return;
+  const action = target.dataset.action;
+
+  try {
+    if (action === "start-free") {
+      await startFreeSession();
+      homeMode = "choose"; // reset por si veníamos del modo pick-routine
+    } else if (action === "pick-routine") {
+      homeMode = "pick-routine";
+      renderHomeView();
+    } else if (action === "back-to-choose") {
+      homeMode = "choose";
+      renderHomeView();
+    } else if (action === "start-routine") {
+      const routineId = target.dataset.routineId;
+      await startRoutineSession(routineId);
+      homeMode = "choose";
+    } else if (action === "resume-session") {
+      setCurrentView("session");
+    }
+  } catch (err) {
+    console.error("Acción de home falló:", err);
+    showToast("Algo salió mal. Inténtalo de nuevo.", "error");
   }
-
-  homeWeightInputEl.value = String(lastSet.weight);
-  homeRepsInputEl.value = String(lastSet.reps);
-  homeIndicatorEl.textContent =
-    `Última vez: ${lastSet.weight} kg × ${lastSet.reps} (${formatRelativeDate(lastSet.completedAt)})`;
 }
 
-function validateSetInput({ exerciseId, weight, reps }) {
-  const errors = {};
-  if (!exerciseId) errors["exercise-select"] = "Selecciona un ejercicio";
-  if (!Number.isFinite(weight) || weight <= 0)
-    errors["weight-input"] = "Introduce un peso mayor que 0";
-  if (!Number.isInteger(reps) || reps < 1)
-    errors["reps-input"] = "Introduce un número entero de reps ≥ 1";
-  return { valid: Object.keys(errors).length === 0, errors };
-}
+// ─── Helpers locales ────────────────────────────────────────────────────────
 
-function setFieldError(fieldId, message) {
-  const errorEl = document.querySelector(`.field-error[data-for="${fieldId}"]`);
-  if (!errorEl) return;
-  errorEl.textContent = message;
-  errorEl.hidden = false;
-}
-
-function clearAllFieldErrors() {
-  document.querySelectorAll(".field-error").forEach((el) => {
-    el.textContent = "";
-    el.hidden = true;
+function formatTime(iso) {
+  return new Date(iso).toLocaleTimeString("es-ES", {
+    hour: "2-digit",
+    minute: "2-digit",
   });
 }
 
-async function handleSubmit(event) {
-  event.preventDefault();
-  clearAllFieldErrors();
-
-  const exerciseId = homeSelectEl.value || "";
-  const weight = parseFloat(homeWeightInputEl.value);
-  const reps = parseInt(homeRepsInputEl.value, 10);
-
-  const { valid, errors } = validateSetInput({ exerciseId, weight, reps });
-  if (!valid) {
-    for (const [fieldId, message] of Object.entries(errors)) {
-      setFieldError(fieldId, message);
-    }
-    return;
-  }
-
-  try {
-    await addSet({ exerciseId, weight, reps });
-    showToast(`Serie guardada · ${weight} kg × ${reps}`);
-    // Refrescar precarga (la última ahora es la que acabamos de guardar).
-    await updatePreloadAndIndicator(exerciseId);
-    homeWeightInputEl.focus();
-  } catch (err) {
-    console.error("Error guardando la serie:", err);
-    showToast("No se pudo guardar la serie. Inténtalo de nuevo.", "error");
-  }
+function formatDate(iso) {
+  return new Date(iso).toLocaleDateString("es-ES", {
+    day: "2-digit",
+    month: "short",
+  });
 }

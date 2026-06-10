@@ -135,6 +135,10 @@ export async function getSetsByExercise(exerciseId) {
   return db.sets.where("exerciseId").equals(exerciseId).toArray();
 }
 
+export async function getSetsBySession(sessionId) {
+  return db.sets.where("sessionId").equals(sessionId).toArray();
+}
+
 /**
  * Devuelve la serie más reciente para un ejercicio dado, o null si no hay ninguna.
  */

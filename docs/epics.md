@@ -317,7 +317,9 @@ So that puedo instalarla en mi iPhone desde cualquier red y compartirla si quier
 
 **Objetivo:** El usuario puede iniciar sesión "libre" o "desde rutina", guardar entrenos libres como rutinas reutilizables, y crear ejercicios custom.
 
-### Story 3.1: Pantalla home con prompt "libre o rutina"
+### Story 3.1: Pantalla home con prompt "libre o rutina" ✅
+
+**Status:** complete · 2026-06-10 · branch v1 · home con 2 botones, recuperación de sesión activa al recargar, sub-modo pick-routine con empty state.
 
 As a usuario que va a empezar un entreno,
 I want elegir entre "entreno libre" o "rutina guardada" al iniciar,
@@ -334,7 +336,9 @@ So that la app me precarga los ejercicios correctos si voy a hacer una rutina co
 
 ---
 
-### Story 3.2: Guardar entreno libre como rutina al finalizar
+### Story 3.2: Guardar entreno libre como rutina al finalizar ✅
+
+**Status:** complete · 2026-06-10 · branch v1 · modal con <dialog> HTML5, validación inline, ESC/backdrop cancelan. **Modelo expandido** sobre el AC original: la Routine guarda `plannedSets[]` completos (peso + reps por serie) además de `exerciseIds`. Petición del usuario para que las rutinas sean plantillas autocontenidas.
 
 As a usuario que acaba de terminar un entreno libre,
 I want poder guardarlo como rutina con un nombre,
