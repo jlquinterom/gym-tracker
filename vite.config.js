@@ -1,9 +1,10 @@
 import { defineConfig } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
 
-// `base` se ajustará a "/gym-tracker/" en Story 2.4 cuando desplegemos a GitHub Pages.
-export default defineConfig({
-  base: "./",
+// En dev (`npm run dev`) sirve desde "/"; en build (para GitHub Pages) usa "/gym-tracker/".
+// Así npm run dev y npm run build funcionan ambos sin tener que tocar nada manualmente.
+export default defineConfig(({ command }) => ({
+  base: command === "build" ? "/gym-tracker/" : "/",
   plugins: [
     VitePWA({
       strategies: "generateSW",
@@ -50,8 +51,6 @@ export default defineConfig({
       workbox: {
         navigateFallback: "index.html",
       },
-      // Permitir validar el manifest y el SW también en modo dev (`npm run dev`),
-      // no solo en build. Sin esto, DevTools muestra "No manifest detected" en dev.
       devOptions: {
         enabled: true,
         type: "module",
@@ -59,4 +58,4 @@ export default defineConfig({
       },
     }),
   ],
-});
+}));
