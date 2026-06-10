@@ -274,7 +274,9 @@ So that no pierdo nada al cambiar de stack.
 
 ---
 
-### Story 2.3: Configurar manifest PWA, iconos y theme
+### Story 2.3: Configurar manifest PWA, iconos y theme ✅
+
+**Status:** complete · 2026-06-10 · branch v1 · manifest detectado en DevTools, iconos generados con script reutilizable (`npm run generate-icons`), meta tag modernizado a `mobile-web-app-capable`. Warning de screenshots ignorado conscientemente (cosmético).
 
 As a usuario,
 I want añadir la app a la pantalla de inicio de mi iPhone y que tenga un icono propio,
