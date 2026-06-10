@@ -7,11 +7,13 @@ import {
   endCurrentSession,
   getPlannedSetsForSession,
   saveRoutineFromSession,
+  addCustomExercise,
 } from "../state.js";
 import { getLastSetByExercise } from "../db.js";
 import { MUSCLE_GROUP_LABELS } from "../seed-exercises.js";
 import { showToast } from "../ui/toast.js";
 import { askSaveAsRoutine } from "../ui/save-routine-modal.js";
+import { askNewExercise } from "../ui/new-exercise-modal.js";
 import { escapeHtml, formatRelativeDate, groupBy } from "../utils.js";
 
 let selectEl = null;
@@ -21,6 +23,7 @@ let indicatorEl = null;
 let formEl = null;
 let plannedEl = null;
 let endSessionBtnEl = null;
+let newExerciseBtnEl = null;
 
 // ─── Bind: se llama UNA VEZ al arrancar ─────────────────────────────────────
 
@@ -32,6 +35,7 @@ export function bindSessionView() {
   formEl = document.getElementById("set-form");
   plannedEl = document.getElementById("session-planned-exercises");
   endSessionBtnEl = document.getElementById("end-session-btn");
+  newExerciseBtnEl = document.getElementById("new-exercise-btn");
 
   if (!formEl) return;
 
@@ -43,6 +47,34 @@ export function bindSessionView() {
 
   if (endSessionBtnEl) {
     endSessionBtnEl.addEventListener("click", handleEndSession);
+  }
+
+  if (newExerciseBtnEl) {
+    newExerciseBtnEl.addEventListener("click", handleNewExercise);
+  }
+}
+
+async function handleNewExercise() {
+  try {
+    const result = await askNewExercise({
+      existingNames: state.exercises.map((e) => e.name),
+      muscleGroupOptions: MUSCLE_GROUP_LABELS,
+    });
+    if (!result) return; // canceló
+
+    const newExercise = await addCustomExercise(result);
+    // Re-renderizar el select (incluye el nuevo agrupado correctamente)
+    populateExerciseSelect();
+    // Seleccionar el ejercicio recién creado
+    selectEl.value = newExercise.id;
+    await updatePreloadAndIndicator(newExercise.id);
+    showToast(`"${newExercise.name}" añadido al catálogo`);
+  } catch (err) {
+    console.error("Error creando ejercicio custom:", err);
+    showToast(
+      err?.message ?? "No se pudo crear el ejercicio. Inténtalo de nuevo.",
+      "error",
+    );
   }
 }
 

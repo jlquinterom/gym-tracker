@@ -115,6 +115,26 @@ body {
   margin-top: 0.25rem;
 }
 
+.btn-link {
+  font-family: inherit;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--accent);
+  background: transparent;
+  border: none;
+  padding: 0.25rem 0;
+  margin-top: 0.25rem;
+  cursor: pointer;
+  text-align: left;
+  align-self: flex-start;
+}
+
+.btn-link:hover,
+.btn-link:focus {
+  text-decoration: underline;
+  outline: none;
+}
+
 .btn-primary {
   font-family: inherit;
   font-size: 1rem;

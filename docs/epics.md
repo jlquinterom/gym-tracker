@@ -356,7 +356,9 @@ So that en futuros días puedo arrancarlo precargado en un toque.
 
 ---
 
-### Story 3.3: Crear y gestionar ejercicios custom
+### Story 3.3: Crear y gestionar ejercicios custom ⚠️ parcial
+
+**Status:** complete (parcial) · 2026-06-10 · branch v1 · Modal "+ Nuevo ejercicio" en session view con validación duplicados case-insensitive. **Pendiente:** vista "Ejercicios" como tab + listado completo + eliminar/renombrar custom. Diferido conscientemente al detectarse necesidad real durante uso (el usuario reportó "no puedo completar mis entrenamientos con el catálogo actual"). Versión pragmática implementada cubre el caso crítico (crear sobre la marcha).
 
 As a usuario,
 I want añadir ejercicios que no están en el catálogo predefinido (ej. un ejercicio específico de mi gimnasio),

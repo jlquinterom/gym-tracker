@@ -9,6 +9,7 @@ import {
   putSession,
   putSet,
   putRoutine,
+  putExercise,
   countSetsInSession,
 } from "./db.js";
 
@@ -188,6 +189,32 @@ export async function saveRoutineFromSession({ session, name, plannedSets }) {
   state.routines.push(routine);
   notify();
   return routine;
+}
+
+// ─── Mutaciones de catálogo (Story 3.3) ─────────────────────────────────────
+
+/**
+ * Crea un ejercicio custom y lo persiste en Dexie.
+ * Lanza si el nombre ya existe (case-insensitive) o es vacío.
+ */
+export async function addCustomExercise({ name, muscleGroup }) {
+  const trimmed = String(name ?? "").trim();
+  if (!trimmed) throw new Error("El nombre del ejercicio no puede estar vacío.");
+  const exists = state.exercises.some(
+    (e) => e.name.toLowerCase() === trimmed.toLowerCase(),
+  );
+  if (exists) throw new Error("Ya existe un ejercicio con ese nombre.");
+
+  const exercise = {
+    id: crypto.randomUUID(),
+    name: trimmed,
+    muscleGroup: muscleGroup || "otros",
+    isCustom: true,
+  };
+  await putExercise(exercise);
+  state.exercises.push(exercise);
+  notify();
+  return exercise;
 }
 
 // ─── Mutaciones de series ───────────────────────────────────────────────────
