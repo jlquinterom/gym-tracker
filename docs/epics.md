@@ -293,7 +293,9 @@ So that la app se siente nativa, abre sin chrome de Safari y se ve profesional.
 
 ---
 
-### Story 2.4: Deploy a GitHub Pages con CI
+### Story 2.4: Deploy a GitHub Pages con CI ✅
+
+**Status:** complete · 2026-06-10 · URL pública: https://jlquinterom.github.io/gym-tracker/ · HTTPS activo · PWA instalable en iPhone Safari verificada.
 
 As a usuario,
 I want la app desplegada en una URL pública HTTPS,
