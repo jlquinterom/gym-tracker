@@ -94,6 +94,16 @@ function populateExerciseSelect() {
   if (!selectEl) return;
   selectEl.innerHTML = "";
 
+  // Placeholder vacío como primera opción (Story 5.1).
+  // El usuario hace super series (alterna ejercicios entre series), así que el
+  // selector queda vacío SIEMPRE — tanto en render inicial como tras cada submit.
+  const placeholder = document.createElement("option");
+  placeholder.value = "";
+  placeholder.textContent = "Selecciona un ejercicio";
+  placeholder.disabled = true;
+  placeholder.hidden = true;
+  selectEl.appendChild(placeholder);
+
   const grouped = groupBy(state.exercises, (e) => e.muscleGroup);
   const knownKeys = Object.keys(MUSCLE_GROUP_LABELS).filter((k) => grouped[k]);
   const unknownKeys = Object.keys(grouped).filter(
@@ -113,13 +123,7 @@ function populateExerciseSelect() {
     selectEl.appendChild(group);
   }
 
-  // Si la sesión vino de una rutina, pre-seleccionar el primer ejercicio del plan.
-  if (state.sessionPlannedSets.length > 0) {
-    const firstPlanned = state.sessionPlannedSets[0].exerciseId;
-    if ([...selectEl.options].some((o) => o.value === firstPlanned)) {
-      selectEl.value = firstPlanned;
-    }
-  }
+  selectEl.value = "";
 }
 
 function renderPlannedExercises() {
@@ -152,13 +156,15 @@ function renderPlannedExercises() {
 async function updatePreloadAndIndicator(exerciseId) {
   if (!weightInputEl || !repsInputEl || !indicatorEl) return;
 
+  // Caso 1: aún no se ha elegido ningún ejercicio (placeholder).
   if (!exerciseId) {
     weightInputEl.value = "";
     repsInputEl.value = "";
-    indicatorEl.textContent = "Sin historial";
+    indicatorEl.textContent = "Selecciona un ejercicio para ver tu última serie";
     return;
   }
 
+  // Caso 2: ejercicio elegido pero sin historial previo.
   const lastSet = await getLastSetByExercise(exerciseId);
   if (!lastSet) {
     weightInputEl.value = "";
@@ -167,6 +173,7 @@ async function updatePreloadAndIndicator(exerciseId) {
     return;
   }
 
+  // Caso 3: ejercicio elegido con historial → precarga + indicador relativo.
   weightInputEl.value = String(lastSet.weight);
   repsInputEl.value = String(lastSet.reps);
   indicatorEl.textContent =
@@ -216,8 +223,15 @@ async function handleSubmit(event) {
   try {
     await addSet({ exerciseId, weight, reps });
     showToast(`Serie guardada · ${weight} kg × ${reps}`);
-    await updatePreloadAndIndicator(exerciseId);
-    weightInputEl.focus();
+
+    // Reset completo al estado "selector vacío" para favorecer el flujo de super series:
+    // el usuario alterna ejercicios entre series, así que tras guardar volvemos al inicio.
+    selectEl.value = "";
+    weightInputEl.value = "";
+    repsInputEl.value = "";
+    indicatorEl.textContent =
+      "Selecciona un ejercicio para ver tu última serie";
+    selectEl.focus();
   } catch (err) {
     console.error("Error guardando la serie:", err);
     showToast("No se pudo guardar la serie. Inténtalo de nuevo.", "error");

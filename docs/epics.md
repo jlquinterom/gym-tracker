@@ -485,7 +485,9 @@ So that puedo importarlo en Google Sheets o cualquier herramienta y mantener sob
 
 **Objetivo:** cerrar los huecos de UX y gestión detectados al usar V1 en escenarios reales. No añade features nuevas, refina las existentes para que el uso diario sea limpio y libre de errores accidentales.
 
-### Story 5.1: Selector de ejercicio vacío por defecto
+### Story 5.1: Selector de ejercicio vacío por defecto ✅
+
+**Status:** complete · 2026-06-17 · branch v1 · selector vacío SIEMPRE (render inicial + tras cada submit), no solo al entrar a la vista. Razón: usuario trabaja en super series alternando ejercicios entre series; mantener el ejercicio tras guardar sería contraproducente.
 
 As a usuario que va a registrar una serie,
 I want que el select de ejercicio aparezca vacío al cargar el formulario,
