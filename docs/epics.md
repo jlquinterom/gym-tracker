@@ -32,6 +32,11 @@ Este documento descompone los requisitos del **Product Brief** + **Distillate** 
 - **FR7**: El sistema calcula y muestra insights de progreso: 1RM estimado por ejercicio (fórmula Epley, solo reps ≤ 10), volumen semanal (peso × reps), frecuencia por grupo muscular, y comparador "hoy vs última vez" inline durante el registro.
 - **FR8**: El usuario puede exportar todo su dataset a un archivo CSV descargable desde el navegador.
 - **FR9**: La app es instalable como PWA en iPhone Safari (Add to Home Screen) y en MacBook (cualquier navegador), con icono y manifest válidos.
+- **FR10**: El usuario puede editar los datos de una serie ya registrada (ejercicio, peso, reps, fecha/hora) o eliminarla.
+- **FR11**: El histórico se visualiza agrupado por sesión de entrenamiento (cards por sesión con sus ejercicios y series anidados), no como lista plana de series sueltas.
+- **FR12**: Al abrir el formulario de registro, el select de ejercicio aparece vacío y el usuario debe seleccionar uno explícitamente para poder guardar.
+- **FR13**: El usuario puede editar (nombre, grupo muscular) y archivar/desarchivar ejercicios custom. Los archivados no aparecen en el select de registro pero sí en el histórico y exports. Eliminación física solo si no tienen series asociadas.
+- **FR14**: El export CSV ofrece 3 modos: (a) solo última sesión, (b) sesiones seleccionadas (vía checkboxes), (c) todo el histórico. El CSV incluye campos extra: `sessionStartedAt`, `sessionEndedAt`, `routineId`, `routineName`, `setOrder`.
 
 ### NonFunctional Requirements
 
@@ -60,6 +65,7 @@ Este documento descompone los requisitos del **Product Brief** + **Distillate** 
 - **AR12**: Deploy V1 a GitHub Pages mediante GitHub Action (`.github/workflows/deploy.yml`). HTTPS automático (requisito para `crypto.randomUUID()` en producción).
 - **AR13**: `dist/` en `.gitignore`. El build no se commitea.
 - **AR14**: Repositorio remoto en GitHub necesario para V1 (no para V0).
+- **AR15**: Schema Dexie v2 añade campo `isArchived: boolean` a la entidad `Exercise` (default `false`). Migración automática vía `db.version(2).upgrade()` que itera todos los Exercise existentes y asigna `isArchived = false`.
 
 ### UX Design Requirements
 
@@ -73,6 +79,9 @@ Este documento descompone los requisitos del **Product Brief** + **Distillate** 
 - **UX-DR8**: Validación de formularios inline (peso > 0, reps ≥ 1, ejercicio seleccionado). Mensaje de error junto al campo, no en alert.
 - **UX-DR9**: Toque en checkbox o botón "✓" cierra la serie y la marca como completada (patrón Strong/Hevy).
 - **UX-DR10**: Prompt al finalizar entreno libre: modal/toast pregunta "¿Guardar como rutina?" con input de nombre.
+- **UX-DR11**: Vista de Histórico = lista de cards por sesión. Header de card: fecha + hora inicio + badge con nombre de rutina (si aplica) + duración (si `endedAt` existe) + contador de series totales. Body: ejercicios agrupados con sus series (peso × reps) en orden.
+- **UX-DR12**: Edición de serie via modal `<dialog>` con form similar al de registro + botones "Guardar cambios" y "Eliminar serie" (eliminar requiere confirmación inline antes de aplicar).
+- **UX-DR13**: Vista o panel "Mis ejercicios" listando solo los `isCustom: true`. Por ejercicio: badge "Activo" / "Archivado" + acciones "Editar", "Archivar"/"Desarchivar", "Eliminar" (deshabilitado si tiene series asociadas).
 
 ### FR Coverage Map
 
@@ -87,6 +96,11 @@ Este documento descompone los requisitos del **Product Brief** + **Distillate** 
 | FR7 Insights | Epic 4 | 1RM (Epley, reps ≤ 10), volumen, frecuencia, "hoy vs última vez" |
 | FR8 Export CSV | Epic 4 | Descarga del navegador |
 | FR9 PWA instalable | Epic 2 | Manifest + service worker via `vite-plugin-pwa` |
+| FR10 Editar/eliminar serie | Epic 5 | Modal de edición desde histórico |
+| FR11 Histórico agrupado por sesión | Epic 5 | Refactor de vista history (cards por sesión) |
+| FR12 Selector vacío por defecto | Epic 5 | Cambio UX en session view |
+| FR13 Gestión ejercicios custom | Epic 5 | Edit/archive/delete + schema v2 (`isArchived`) |
+| FR14 Export CSV flexible | Epic 5 | Modal con 3 modos + checkboxes selección + más campos |
 
 ## Epic List
 
@@ -127,6 +141,16 @@ Implementa cálculos de insights: 1RM estimado (Epley, solo reps ≤ 10), volume
 
 **FRs covered:** FR7, FR8
 **NFRs principales:** NFR3 (soberanía: cumple el compromiso de portabilidad)
+
+### Epic 5: Mejoras de usabilidad post-uso real
+
+**Objetivo de usuario:** "Tras usar la app un tiempo en el gym, necesito corregir errores, ver el histórico con contexto, gestionar mi catálogo de ejercicios y exportar con flexibilidad."
+
+Conjunto de mejoras identificadas tras uso real de V1. Cierra huecos de UX y gestión que surgieron al usar la app de verdad, no en pruebas. Origen: feedback del usuario sesión 2026-06-10.
+
+**FRs covered:** FR10, FR11, FR12, FR13, FR14
+**ARs:** AR15 (Dexie schema v2 con `isArchived`)
+**UX-DRs:** UX-DR11, UX-DR12, UX-DR13
 
 ---
 
@@ -454,3 +478,101 @@ So that puedo importarlo en Google Sheets o cualquier herramienta y mantener sob
 **And** **Given** el archivo descargado, **When** se importa en Google Sheets (File → Import → Upload), **Then** las filas se ven correctamente sin caracteres rotos y las fechas son parseables (ISO 8601).
 **And** la función `exportToCsv()` es **pura** en el sentido de que no muta `state` ni la base de datos — solo lee.
 **And** **Given** zero datos, **When** el usuario pulsa "Exportar", **Then** se muestra toast "No hay datos para exportar" y no se descarga nada.
+
+---
+
+## Epic 5: Mejoras de usabilidad post-uso real
+
+**Objetivo:** cerrar los huecos de UX y gestión detectados al usar V1 en escenarios reales. No añade features nuevas, refina las existentes para que el uso diario sea limpio y libre de errores accidentales.
+
+### Story 5.1: Selector de ejercicio vacío por defecto
+
+As a usuario que va a registrar una serie,
+I want que el select de ejercicio aparezca vacío al cargar el formulario,
+So that nunca registre una serie con el ejercicio equivocado por accidente (preselección automática).
+
+**Acceptance Criteria:**
+
+**Given** la vista de sesión cargada (libre o desde rutina),
+**When** se renderiza el formulario por primera vez tras entrar a la vista,
+**Then** el `<select id="exercise-select">` tiene como primera opción `<option value="" disabled selected hidden>Selecciona un ejercicio</option>` y ningún ejercicio del catálogo está pre-seleccionado.
+**And** el indicador "Última vez" muestra texto neutro ("Selecciona un ejercicio para ver tu última serie") hasta que el usuario elija uno.
+**And** los inputs de peso y reps quedan vacíos hasta que se elige ejercicio.
+**And** la validación al pulsar "Guardar serie" sigue mostrando el error inline "Selecciona un ejercicio" si el value sigue vacío.
+**And** **Given** una sesión iniciada desde rutina, **When** se renderiza, **Then** el panel "Rutina cargada — series sugeridas" sigue mostrándose normalmente (con los pesos/reps planificados), pero el select de registro sigue vacío. El usuario decide qué ejercicio registrar cada vez, sin asumir orden de la rutina.
+
+### Story 5.2: Editar y eliminar series registradas
+
+As a usuario,
+I want poder editar o eliminar una serie ya guardada,
+So that pueda corregir errores de imputación sin recrear datos o tener que vivir con el error.
+
+**Acceptance Criteria:**
+
+**Given** la vista de Histórico con series visibles,
+**When** el usuario toca una serie (o un botón "Editar" en su card/fila),
+**Then** se abre un modal `<dialog>` con un formulario pre-rellenado con los datos de la serie: select de ejercicio, input de peso, input de reps, `<input type="datetime-local">` con `completedAt`.
+**And** el modal tiene dos botones de acción: "Guardar cambios" y "Eliminar serie".
+**And** **Given** el usuario modifica algún campo y pulsa "Guardar cambios", **When** los datos pasan la validación (peso > 0, reps ≥ 1, exerciseId no vacío), **Then** se actualiza el `Set` en Dexie (mismo `id`, otros campos modificados) y el histórico se re-renderiza.
+**And** **Given** el usuario pulsa "Eliminar serie", **When** se muestra un prompt de confirmación inline en el propio modal ("¿Seguro que quieres eliminar esta serie?") y pulsa "Sí, eliminar", **Then** se elimina el `Set` de Dexie y desaparece del histórico.
+**And** la validación inline es la misma que en el registro original.
+**And** **Given** el usuario cancela el modal (X, ESC, backdrop), **When** la acción se procesa, **Then** nada cambia y los datos originales quedan intactos.
+
+### Story 5.3: Histórico agrupado por sesiones de entrenamiento
+
+As a usuario,
+I want ver el histórico organizado por sesión de entrenamiento,
+So that pueda revisar y comparar entrenamientos completos con contexto, en lugar de series sueltas sin marco.
+
+**Acceptance Criteria:**
+
+**Given** la vista de Histórico,
+**When** se renderiza,
+**Then** se muestra una lista de cards, una por sesión, ordenadas por `startedAt` descendente (más reciente arriba).
+**And** cada card tiene un header con: fecha (`DD MMM YYYY`), hora de inicio (`HH:mm`), badge con nombre de la rutina si la sesión vino de una (`#routineName`), duración si `endedAt` está informado (`Xh Ymin`), y contador "N series" totales.
+**And** cada card tiene un body con la lista de ejercicios realizados en orden cronológico de primera aparición. Bajo cada ejercicio, sus series como `weight kg × reps` separadas por puntos o en líneas.
+**And** el filtro existente "Filtrar por ejercicio" sigue funcionando: al elegir un ejercicio, se ocultan las cards que no tienen series de ese ejercicio, y dentro de las cards visibles solo se muestran las series de ese ejercicio (filtrado intra-card).
+**And** **Given** una sesión sin series registradas, **When** se renderiza, **Then** NO se muestra card vacía.
+**And** **Given** ninguna sesión registrada, **When** se renderiza, **Then** se muestra el empty state actual: "Aún no has registrado ninguna serie".
+**And** las series dentro de cada card son tocables y abren el modal de edición (Story 5.2) — integración con Story 5.2.
+
+### Story 5.4: Gestión de ejercicios custom (editar, archivar, eliminar)
+
+As a usuario,
+I want gestionar los ejercicios que he creado manualmente: renombrarlos, archivarlos cuando ya no los uso, o eliminarlos si nunca los he registrado,
+So that mi catálogo se mantenga limpio sin perder el histórico de los ejercicios que sí he hecho.
+
+**Acceptance Criteria:**
+
+**Given** una vista o panel "Mis ejercicios" (accesible desde el menú, o desde el modal "+ Nuevo ejercicio" como sección secundaria),
+**When** se renderiza,
+**Then** se muestran únicamente los ejercicios con `isCustom: true`, agrupados por grupo muscular, con badge "Activo" o "Archivado" según `isArchived`.
+**And** cada ejercicio expone 3 acciones: "Editar" (siempre), "Archivar / Desarchivar" (siempre), "Eliminar" (visible siempre pero deshabilitado con tooltip si tiene series asociadas).
+**And** **Given** "Editar", **When** se pulsa, **Then** se abre el modal con nombre + grupo muscular pre-rellenados. Al guardar, validación de duplicados (case-insensitive) excluye al propio ejercicio en edición.
+**And** **Given** "Archivar", **When** se confirma, **Then** el Exercise pasa a `isArchived: true`. **Deja de aparecer en el select de registro** (Story 1.2 + 3.1) **pero sigue apareciendo en el histórico, en rutinas guardadas y en exports**.
+**And** **Given** "Desarchivar", **When** se confirma, **Then** `isArchived` vuelve a `false` y el ejercicio reaparece en el select de registro.
+**And** **Given** "Eliminar" sobre un ejercicio sin series asociadas, **When** se confirma, **Then** el Exercise se elimina permanentemente de Dexie.
+**And** **Given** "Eliminar" sobre un ejercicio con series, **When** se intenta, **Then** la acción está deshabilitada y un tooltip/mensaje explica "Este ejercicio tiene N series registradas. Archívalo en su lugar para no perder histórico."
+**And** los ejercicios predefinidos (`isCustom: false`) **no se pueden editar ni eliminar** desde esta vista, pero **sí se pueden archivar** (útil si no usas alguno).
+**And** Dexie se sube a schema v2 con campo `isArchived: boolean`. Migración con `db.version(2).upgrade(tx => tx.table('exercises').toCollection().modify(e => { e.isArchived = false; }))`.
+
+### Story 5.5: Exportación CSV flexible (último entreno, selección, todo)
+
+As a usuario,
+I want elegir qué subconjunto de mis datos exporto a CSV,
+So that pueda generar un backup del último entreno o exportar sesiones concretas sin tener que filtrar luego en una hoja de cálculo.
+
+**Acceptance Criteria:**
+
+**Given** el botón "Exportar a CSV" en la vista de Histórico,
+**When** el usuario lo pulsa,
+**Then** se muestra un modal `<dialog>` con 3 opciones radio:
+  1. "Solo el último entreno"
+  2. "Sesiones seleccionadas (elige en el histórico)"
+  3. "Todo el histórico"
+**And** un botón "Exportar" debajo del modal dispara la descarga según opción.
+**And** **Given** "Solo el último entreno", **When** confirma, **Then** el CSV contiene solo las series de la sesión con `startedAt` máximo. Filename: `gym-tracker-last-{YYYY-MM-DD}.csv`.
+**And** **Given** "Sesiones seleccionadas", **When** el usuario confirma, **Then** el modal se cierra y aparecen checkboxes en el header de cada card del histórico (integración con Story 5.3). El usuario marca las que quiera; aparece una barra fija arriba con "N seleccionadas · [Exportar selección]". Al pulsar "Exportar selección", descarga CSV de esas sesiones.
+**And** **Given** "Todo el histórico", **When** confirma, **Then** comportamiento idéntico al export actual (Story 4.4). Filename: `gym-tracker-export-{YYYY-MM-DD}.csv`.
+**And** el CSV (en cualquier modo) incluye columnas: `setId, sessionId, sessionStartedAt, sessionEndedAt, routineId, routineName, setOrder, exerciseId, exerciseName, muscleGroup, weight, reps, completedAt`.
+**And** **Given** 0 datos según el modo elegido (ej. "Solo el último entreno" cuando no hay sesiones), **Then** toast "No hay datos para exportar" y no se descarga.
