@@ -2,8 +2,9 @@
 
 import { state, setHistoryFilter } from "../state.js";
 import { getAllSets } from "../db.js";
-import { triggerExport } from "../export-csv.js";
+import { triggerExport, loadExportContext } from "../export-csv.js";
 import { showToast } from "../ui/toast.js";
+import { askExportMode } from "../ui/export-csv-modal.js";
 import { escapeHtml } from "../utils.js";
 
 let historyContainerEl = null;
@@ -30,7 +31,15 @@ export function bindHistoryView() {
 
 async function handleExport() {
   try {
-    const exported = await triggerExport();
+    // Cargar el contexto una vez para poblar el modal (lista de sesiones para elegir).
+    const ctx = await loadExportContext();
+    const choice = await askExportMode({
+      sessions: ctx.sessions,
+      routines: ctx.routines,
+    });
+    if (!choice) return; // canceló
+
+    const exported = await triggerExport(choice);
     if (exported) {
       showToast("CSV descargado");
     } else {

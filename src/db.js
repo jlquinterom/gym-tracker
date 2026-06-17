@@ -121,6 +121,10 @@ export async function getActiveSessionForToday() {
   );
 }
 
+export async function getAllSessions() {
+  return db.sessions.toArray();
+}
+
 // ─── CRUD: Sets ─────────────────────────────────────────────────────────────
 
 export async function putSet(set) {

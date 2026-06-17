@@ -558,7 +558,9 @@ So that mi catálogo se mantenga limpio sin perder el histórico de los ejercici
 **And** los ejercicios predefinidos (`isCustom: false`) **no se pueden editar ni eliminar** desde esta vista, pero **sí se pueden archivar** (útil si no usas alguno).
 **And** Dexie se sube a schema v2 con campo `isArchived: boolean`. Migración con `db.version(2).upgrade(tx => tx.table('exercises').toCollection().modify(e => { e.isArchived = false; }))`.
 
-### Story 5.5: Exportación CSV flexible (último entreno, selección, todo)
+### Story 5.5: Exportación CSV flexible (último entreno, selección, todo) ✅
+
+**Status:** complete · 2026-06-17 · branch v1 · modal `<dialog>` con 3 modos. Lista de sesiones con checkboxes dentro del propio modal (autocontenido, no depende de Story 5.3). CSV ampliado a 13 columnas: + `sessionStartedAt`, `sessionEndedAt`, `routineId`, `routineName`, `setOrder`. Filenames diferenciados según modo (`last-`, `selection-`, `export-`).
 
 As a usuario,
 I want elegir qué subconjunto de mis datos exporto a CSV,
